@@ -28,3 +28,12 @@ mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexToDFA"
 mvn clean compile test-compile
 mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test" -X
 ```
+
+### Performance Results
+
+```
+Performance ranking (lower is better):
+  Table: 13.5 ns/match
+  DFA: 14.1 ns/match
+  Backtrack: 16.7 ns/match
+```
