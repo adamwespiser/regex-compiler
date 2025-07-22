@@ -1,0 +1,41 @@
+# Maven target directory
+/target/
+
+# Eclipse project files
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA project files
+*.iml
+.idea/
+
+# NetBeans project files
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+# MacOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment and IDE-specific files
+*.swp
+*~
+
+# Maven wrapper files (optional, if you use them and want to exclude)
+/.mvn/wrapper/maven-wrapper.jar
+
+# Build output
+/build/
