@@ -20,7 +20,7 @@ class DFARegexPattern implements Pattern {
             compiled.patternString = regex;
             
             RegexToDFA converter = new RegexToDFA();
-            compiled.dfa = converter.convertRegexToDFA(regex);
+            compiled.dfa = converter.convertRegexToDFAOptimized(regex);
             
             compiled.compileTime = System.nanoTime() - startTime;
             compiled.stats = Map.of(

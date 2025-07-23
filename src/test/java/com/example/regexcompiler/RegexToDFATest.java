@@ -473,6 +473,137 @@ public class RegexToDFATest {
         }
     }
     
+    // ============================================
+    // DFA OPTIMIZATION TESTS
+    // ============================================
+    
+    @Nested
+    @DisplayName("DFA Optimization Tests")
+    class OptimizationTests {
+        
+        @Test
+        @DisplayName("Optimized compiler should produce equivalent results")
+        void testOptimizedEquivalence() throws Parser.RegexParseException {
+            String[] testPatterns = {"a", "ab", "a|b", "a*", "a+", "(a|b)*", "a+b*", "(ab)*"};
+            String[] testInputs = {"", "a", "b", "ab", "aa", "bb", "abc"};
+            
+            for (String pattern : testPatterns) {
+                RegexToDFA.DFA originalDFA = converter.convertRegexToDFA(pattern);
+                RegexToDFA.DFA optimizedDFA = converter.convertRegexToDFAOptimized(pattern);
+                
+                // Both should accept the same inputs
+                for (String input : testInputs) {
+                    boolean originalResult = originalDFA.accepts(input);
+                    boolean optimizedResult = optimizedDFA.accepts(input);
+                    
+                    assertEquals(originalResult, optimizedResult, 
+                        String.format("Pattern '%s' with input '%s': original=%s, optimized=%s", 
+                            pattern, input, originalResult, optimizedResult));
+                }
+            }
+        }
+        
+        @Test
+        @DisplayName("Optimization should reduce or maintain state count")
+        void testStateReduction() throws Parser.RegexParseException {
+            String[] testPatterns = {"a|a", "a*a*", "(a|b)|(a|b)", "a+a*"};
+            
+            for (String pattern : testPatterns) {
+                RegexToDFA.DFA originalDFA = converter.convertRegexToDFA(pattern);
+                RegexToDFA.DFA optimizedDFA = converter.convertRegexToDFAOptimized(pattern);
+                
+                // Optimized should have fewer or equal states
+                assertTrue(optimizedDFA.states.size() <= originalDFA.states.size(),
+                    String.format("Pattern '%s': original=%d states, optimized=%d states", 
+                        pattern, originalDFA.states.size(), optimizedDFA.states.size()));
+            }
+        }
+        
+        @Test
+        @DisplayName("Individual optimization steps work correctly")
+        void testIndividualOptimizations() throws Parser.RegexParseException {
+            // Test case that should benefit from all optimizations
+            String pattern = "(a|b)*a(a|b)*";
+            RegexToDFA.DFA originalDFA = converter.convertRegexToDFA(pattern);
+            
+            // Test unreachable state removal
+            RegexToDFA.DFA afterUnreachable = converter.removeUnreachableStates(originalDFA);
+            assertTrue(afterUnreachable.states.size() <= originalDFA.states.size());
+            
+            // Test dead state removal
+            RegexToDFA.DFA afterDead = converter.removeDeadStates(afterUnreachable);
+            assertTrue(afterDead.states.size() <= afterUnreachable.states.size());
+            
+            // Test minimization
+            RegexToDFA.DFA minimized = converter.minimizeDFA(afterDead);
+            assertTrue(minimized.states.size() <= afterDead.states.size());
+            
+            // All should accept the same strings
+            String[] testInputs = {"a", "aa", "ab", "ba", "aba", "bab"};
+            for (String input : testInputs) {
+                boolean original = originalDFA.accepts(input);
+                boolean optimized = minimized.accepts(input);
+                assertEquals(original, optimized, 
+                    String.format("Input '%s': original=%s, optimized=%s", input, original, optimized));
+            }
+        }
+        
+        @Test
+        @DisplayName("Optimization preserves all accepting behavior")
+        void testOptimizationPreservesAcceptance() throws Parser.RegexParseException {
+            String[] complexPatterns = {
+                "((a|b)*c)+",
+                "a+b*c+",
+                "(a|b)*(c|d)*",
+                "a(b|c)*d(e|f)*"
+            };
+            
+            for (String pattern : complexPatterns) {
+                RegexToDFA.DFA originalDFA = converter.convertRegexToDFA(pattern);
+                RegexToDFA.DFA optimizedDFA = converter.convertRegexToDFAOptimized(pattern);
+                
+                // Generate test strings
+                String[] testInputs = generateTestStrings(pattern);
+                
+                for (String input : testInputs) {
+                    boolean originalResult = originalDFA.accepts(input);
+                    boolean optimizedResult = optimizedDFA.accepts(input);
+                    
+                    assertEquals(originalResult, optimizedResult,
+                        String.format("Pattern '%s' with input '%s'", pattern, input));
+                }
+            }
+        }
+        
+        @Test
+        @DisplayName("Optimization handles edge cases")
+        void testOptimizationEdgeCases() throws Parser.RegexParseException {
+            // Empty pattern
+            RegexToDFA.DFA emptyOriginal = converter.convertRegexToDFA("");
+            RegexToDFA.DFA emptyOptimized = converter.convertRegexToDFAOptimized("");
+            assertEquals(emptyOriginal.accepts(""), emptyOptimized.accepts(""));
+            assertEquals(emptyOriginal.accepts("a"), emptyOptimized.accepts("a"));
+            
+            // Single character
+            RegexToDFA.DFA singleOriginal = converter.convertRegexToDFA("a");
+            RegexToDFA.DFA singleOptimized = converter.convertRegexToDFAOptimized("a");
+            assertEquals(singleOriginal.accepts("a"), singleOptimized.accepts("a"));
+            assertEquals(singleOriginal.accepts(""), singleOptimized.accepts(""));
+            
+            // Star of single character (should be minimal already)
+            RegexToDFA.DFA starOriginal = converter.convertRegexToDFA("a*");
+            RegexToDFA.DFA starOptimized = converter.convertRegexToDFAOptimized("a*");
+            assertEquals(starOriginal.accepts(""), starOptimized.accepts(""));
+            assertEquals(starOriginal.accepts("a"), starOptimized.accepts("a"));
+            assertEquals(starOriginal.accepts("aa"), starOptimized.accepts("aa"));
+        }
+        
+        private String[] generateTestStrings(String pattern) {
+            // Simple test string generation - could be more sophisticated
+            return new String[]{"", "a", "b", "c", "d", "e", "f", "ab", "ac", "bc", "abc", "abcd"};
+        }
+    }
+    
     /**
      * Helper method from original RegexToDFA main method
      */

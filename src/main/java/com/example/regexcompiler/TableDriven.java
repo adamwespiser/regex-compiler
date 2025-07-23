@@ -19,9 +19,7 @@ class TableDriven implements Pattern {
         
         try {
             RegexToDFA converter = new RegexToDFA();
-            RegexToDFA.DFA dfa = converter.convertRegexToDFA(regex);
-            
-            RegexToDFA.DFA optimizedDfa = optimizeDFA(dfa);
+            RegexToDFA.DFA optimizedDfa = converter.convertRegexToDFAOptimized(regex);
             
             TableDriven compiled = new TableDriven();
             compiled.patternString = regex;
@@ -32,7 +30,6 @@ class TableDriven implements Pattern {
             compiled.stats = Map.of(
                 "implementation", "Table-Driven (Optimized DFA)",
                 "compileTimeNs", compileTime,
-                "originalStates", dfa.states.size(),
                 "optimizedStates", optimizedDfa.states.size(),
                 "alphabetSize", optimizedDfa.alphabet.size(),
                 "tableSize", compiled.transitionTable.length * compiled.transitionTable[0].length
@@ -44,52 +41,6 @@ class TableDriven implements Pattern {
             throw new RegexCompileException("Failed to compile regex: " + regex, e);
         }
     }
-      /**
-     * Optimize DFA by removing unreachable states (disable equivalence merging for now)
-     */
-    private RegexToDFA.DFA optimizeDFA(RegexToDFA.DFA dfa) {
-        // Step 1: Remove unreachable states (this is safe)
-        Set<RegexToDFA.DFAState> reachableStates = findReachableStates(dfa);
-        
-        // Create a NEW set to avoid any reference issues
-        Set<RegexToDFA.DFAState> optimizedStates = new HashSet<>(reachableStates);
-        
-        // Ensure start state is in the optimized set
-        if (!optimizedStates.contains(dfa.start)) {
-            throw new RuntimeException("Optimization removed start state - this should never happen! " +
-                "Start state: " + dfa.start.id + ", Optimized states: " + 
-                optimizedStates.stream().map(s -> String.valueOf(s.id)).reduce((a,b) -> a + "," + b).orElse("none"));
-        }
-        
-        // Create optimized DFA
-        return new RegexToDFA.DFA(dfa.start, optimizedStates, dfa.alphabet);
-    }
-    
-    /**
-     * Find all states reachable from the start state (INCLUDING the start state itself)
-     */
-    private Set<RegexToDFA.DFAState> findReachableStates(RegexToDFA.DFA dfa) {
-        Set<RegexToDFA.DFAState> reachable = new HashSet<>();
-        Queue<RegexToDFA.DFAState> queue = new ArrayDeque<>();
-        
-        // Add the start state first
-        queue.offer(dfa.start);
-        reachable.add(dfa.start);
-        
-        while (!queue.isEmpty()) {
-            RegexToDFA.DFAState current = queue.poll();
-            
-            for (RegexToDFA.DFAState target : current.transitions.values()) {
-                if (!reachable.contains(target)) {
-                    reachable.add(target);
-                    queue.offer(target);
-                }
-            }
-        }
-        
-        return reachable;
-    }
-    
     /**
      * Convert optimized DFA to compact transition table representation
      */

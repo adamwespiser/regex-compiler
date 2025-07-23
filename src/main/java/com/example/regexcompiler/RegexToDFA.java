@@ -406,4 +406,238 @@ public class RegexToDFA {
         
         return alphabet;
     }
+    
+    // ============================================
+    // DFA OPTIMIZATION METHODS
+    // ============================================
+    
+    /**
+     * Convert regex to optimized DFA with all optimizations applied
+     */
+    public DFA convertRegexToDFAOptimized(String regex) throws Parser.RegexParseException {
+        // First, create the basic DFA
+        DFA dfa = convertRegexToDFA(regex);
+        
+        // Apply optimizations in sequence
+        dfa = removeUnreachableStates(dfa);
+        dfa = removeDeadStates(dfa);
+        dfa = minimizeDFA(dfa);
+        
+        return dfa;
+    }
+    
+    /**
+     * Remove states that cannot be reached from the start state
+     */
+    public DFA removeUnreachableStates(DFA dfa) {
+        Set<DFAState> reachable = new HashSet<>();
+        Queue<DFAState> queue = new ArrayDeque<>();
+        
+        queue.offer(dfa.start);
+        reachable.add(dfa.start);
+        
+        while (!queue.isEmpty()) {
+            DFAState current = queue.poll();
+            
+            for (DFAState target : current.transitions.values()) {
+                if (!reachable.contains(target)) {
+                    reachable.add(target);
+                    queue.offer(target);
+                }
+            }
+        }
+        
+        return new DFA(dfa.start, reachable, dfa.alphabet);
+    }
+    
+    /**
+     * Remove dead states (states from which no accepting state is reachable)
+     */
+    public DFA removeDeadStates(DFA dfa) {
+        Set<DFAState> liveStates = new HashSet<>();
+        Queue<DFAState> queue = new ArrayDeque<>();
+        
+        // Start with accepting states
+        for (DFAState state : dfa.states) {
+            if (state.isAccepting) {
+                queue.offer(state);
+                liveStates.add(state);
+            }
+        }
+        
+        // Work backwards to find all states that can reach accepting states
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (DFAState state : dfa.states) {
+                if (!liveStates.contains(state)) {
+                    for (DFAState target : state.transitions.values()) {
+                        if (liveStates.contains(target)) {
+                            liveStates.add(state);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Must keep start state even if it's dead
+        liveStates.add(dfa.start);
+        
+        return new DFA(dfa.start, liveStates, dfa.alphabet);
+    }
+    
+    /**
+     * Minimize DFA using Hopcroft's algorithm
+     */
+    public DFA minimizeDFA(DFA dfa) {
+        // Initial partition: accepting vs non-accepting
+        List<Set<DFAState>> partition = new ArrayList<>();
+        Set<DFAState> accepting = new HashSet<>();
+        Set<DFAState> nonAccepting = new HashSet<>();
+        
+        for (DFAState state : dfa.states) {
+            if (state.isAccepting) {
+                accepting.add(state);
+            } else {
+                nonAccepting.add(state);
+            }
+        }
+        
+        if (!accepting.isEmpty()) partition.add(accepting);
+        if (!nonAccepting.isEmpty()) partition.add(nonAccepting);
+        
+        // Refine partition until stable
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            List<Set<DFAState>> newPartition = new ArrayList<>();
+            
+            for (Set<DFAState> group : partition) {
+                if (group.size() <= 1) {
+                    newPartition.add(group);
+                    continue;
+                }
+                
+                // Try to split this group based on transition behavior
+                Map<String, Set<DFAState>> signatures = new HashMap<>();
+                
+                for (DFAState state : group) {
+                    String signature = computeStateSignature(state, partition, dfa.alphabet);
+                    signatures.computeIfAbsent(signature, k -> new HashSet<>()).add(state);
+                }
+                
+                if (signatures.size() > 1) {
+                    changed = true;
+                    newPartition.addAll(signatures.values());
+                } else {
+                    newPartition.add(group);
+                }
+            }
+            
+            partition = newPartition;
+        }
+        
+        // Build minimized DFA
+        return buildMinimizedDFA(dfa, partition);
+    }
+    
+    /**
+     * Compute signature for a state based on which partition its transitions go to
+     */
+    private String computeStateSignature(DFAState state, 
+                                       List<Set<DFAState>> partition,
+                                       Set<Character> alphabet) {
+        StringBuilder sig = new StringBuilder();
+        
+        for (Character c : alphabet) {
+            DFAState target = state.transitions.get(c);
+            if (target == null) {
+                sig.append("-1,");
+            } else {
+                // Find which partition the target belongs to
+                for (int i = 0; i < partition.size(); i++) {
+                    if (partition.get(i).contains(target)) {
+                        sig.append(i).append(",");
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return sig.toString();
+    }
+    
+    /**
+     * Build minimized DFA from partition
+     */
+    private DFA buildMinimizedDFA(DFA original, 
+                                List<Set<DFAState>> partition) {
+        // Create mapping from old states to their partition
+        Map<DFAState, Set<DFAState>> stateToPartition = new HashMap<>();
+        for (Set<DFAState> part : partition) {
+            for (DFAState state : part) {
+                stateToPartition.put(state, part);
+            }
+        }
+        
+        // Create one new DFA state per partition
+        Map<Set<DFAState>, DFAState> partitionToNewState = new HashMap<>();
+        
+        for (Set<DFAState> part : partition) {
+            // Collect all NFA states from all DFA states in this partition
+            Set<NFAState> combinedNFAStates = new HashSet<>();
+            boolean isAccepting = false;
+            
+            for (DFAState state : part) {
+                if (state.nfaStates != null) {
+                    combinedNFAStates.addAll(state.nfaStates);
+                }
+                if (state.isAccepting) {
+                    isAccepting = true;
+                }
+            }
+            
+            // Create new DFA state representing this partition
+            DFAState newState = new DFAState(combinedNFAStates);
+            newState.isAccepting = isAccepting;
+            partitionToNewState.put(part, newState);
+        }
+        
+        // Build transitions for new states
+        for (Map.Entry<Set<DFAState>, DFAState> entry : partitionToNewState.entrySet()) {
+            Set<DFAState> sourcePartition = entry.getKey();
+            DFAState newState = entry.getValue();
+            
+            // Use transitions from any state in the partition (they should all be equivalent)
+            DFAState representative = sourcePartition.iterator().next();
+            
+            for (Map.Entry<Character, DFAState> trans : representative.transitions.entrySet()) {
+                Character c = trans.getKey();
+                DFAState oldTarget = trans.getValue();
+                
+                // Find which partition the target belongs to
+                Set<DFAState> targetPartition = stateToPartition.get(oldTarget);
+                if (targetPartition != null) {
+                    DFAState newTarget = partitionToNewState.get(targetPartition);
+                    if (newTarget != null) {
+                        newState.addTransition(c, newTarget);
+                    }
+                }
+            }
+        }
+        
+        // Find new start state
+        Set<DFAState> startPartition = stateToPartition.get(original.start);
+        DFAState newStart = partitionToNewState.get(startPartition);
+        
+        if (newStart == null) {
+            // Fallback if something went wrong - should not happen if partition is correct
+            System.err.println("Warning: Could not find start state in minimized DFA, returning original");
+            return original;
+        }
+        
+        return new DFA(newStart, new HashSet<>(partitionToNewState.values()), original.alphabet);
+    }
 }
