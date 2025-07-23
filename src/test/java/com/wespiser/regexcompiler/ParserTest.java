@@ -1,4 +1,4 @@
-package com.example.regexcompiler;
+package com.wespiser.regexcompiler;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;

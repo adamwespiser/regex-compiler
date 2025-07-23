@@ -1,19 +1,19 @@
-package com.example.regexcompiler;
+package com.wespiser.regexcompiler;
 
 import java.util.*;
 
 /**
  * Performance testing suite for different regex implementations.
  * 
- * Place this file in: src/test/java/com/example/regexcompiler/RegexPerformanceTest.java
+ * Place this file in: src/test/java/com/wespiser/regexcompiler/RegexPerformanceTest.java
  * 
  * Run with:
  *   mvn test-compile
- *   mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test"
+ *   mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test"
  * 
  * Or directly with javac/java:
- *   javac -cp target/classes src/test/java/com/example/regexcompiler/RegexPerformanceTest.java
- *   java -cp target/classes:src/test/java com.example.regexcompiler.RegexPerformanceTest
+ *   javac -cp target/classes src/test/java/com/wespiser/regexcompiler/RegexPerformanceTest.java
+ *   java -cp target/classes:src/test/java com.wespiser.regexcompiler.RegexPerformanceTest
  */
 public class RegexPerformanceTest {
     

@@ -18,15 +18,15 @@ mvn clean compile test-compile test
 ### Test individual files
 
 ```
-mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexParser"
-mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexToDFA"
+mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexParser"
+mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexToDFA"
 ```
 
 ### Performance Test
 
 ```
 mvn clean compile test-compile
-mvn exec:java -Dexec.mainClass="com.example.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test" -X
+mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test" -X
 ```
 
 ### Performance Results
@@ -57,10 +57,10 @@ The benchmark system generates test data and measures performance across differe
 mvn clean compile
 
 # 2. Generate test data
-java -cp target/classes com.example.regexcompiler.BenchmarkDataGenerator
+java -cp target/classes com.wespiser.regexcompiler.BenchmarkDataGenerator
 
 # 3. Run benchmarks (may take several minutes)
-java -cp target/classes com.example.regexcompiler.RegexBenchmark
+java -cp target/classes com.wespiser.regexcompiler.RegexBenchmark
 
 # 4. Generate analysis plots (requires R with ggplot2)
 cd analysis

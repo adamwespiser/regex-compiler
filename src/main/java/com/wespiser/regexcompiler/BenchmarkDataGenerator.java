@@ -1,4 +1,4 @@
-package com.example.regexcompiler;
+package com.wespiser.regexcompiler;
 
 import java.io.IOException;
 import java.nio.file.Files;
