@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class PatternTest {
@@ -79,7 +80,8 @@ public class PatternTest {
         return Stream.of(
             new NamedPatternFactory("DFA", Pattern::compileDFA),
             new NamedPatternFactory("Backtrack", Pattern::compileBacktrack),
-            new NamedPatternFactory("Table", Pattern::compileTable)
+            new NamedPatternFactory("Table", Pattern::compileTable),
+            new NamedPatternFactory("JIT", Pattern::compileJIT)
         );
     }
     
@@ -371,22 +373,24 @@ public class PatternTest {
                 Pattern dfaPattern = Pattern.compileDFA(testCase.pattern);
                 Pattern backtrackPattern = Pattern.compileBacktrack(testCase.pattern);
                 Pattern tablePattern = Pattern.compileTable(testCase.pattern);
+                Pattern jitPattern = Pattern.compileJIT(testCase.pattern);
                 
                 // Test all strings that should be accepted
                 for (String input : testCase.shouldAccept) {
                     boolean dfaResult = dfaPattern.matches(input);
                     boolean backtrackResult = backtrackPattern.matches(input);
                     boolean tableResult = tablePattern.matches(input);
+                    boolean jitResult = jitPattern.matches(input);
                     
                     // If there's inconsistency, debug it
-                    if (!(dfaResult && backtrackResult && tableResult)) {
-                        System.err.printf("INCONSISTENCY for pattern '%s' with input '%s': DFA=%s, Backtrack=%s, Table=%s%n",
-                            testCase.pattern, input, dfaResult, backtrackResult, tableResult);
+                    if (!(dfaResult && backtrackResult && tableResult && jitResult)) {
+                        System.err.printf("INCONSISTENCY for pattern '%s' with input '%s': DFA=%s, Backtrack=%s, Table=%s, JIT=%s%n",
+                            testCase.pattern, input, dfaResult, backtrackResult, tableResult, jitResult);
                         
                         // For now, allow Table implementation to be different since it might have bugs
-                        assertTrue(dfaResult && backtrackResult,
-                            String.format("DFA and Backtrack should both accept '%s' for pattern '%s'. " +
-                                "DFA: %s, Backtrack: %s", input, testCase.pattern, dfaResult, backtrackResult));
+                        assertTrue(dfaResult && backtrackResult && jitResult,
+                            String.format("DFA, Backtrack, and JIT should all accept '%s' for pattern '%s'. " +
+                                "DFA: %s, Backtrack: %s, JIT: %s", input, testCase.pattern, dfaResult, backtrackResult, jitResult));
                     }
                 }
                 
@@ -395,16 +399,17 @@ public class PatternTest {
                     boolean dfaResult = dfaPattern.matches(input);
                     boolean backtrackResult = backtrackPattern.matches(input);
                     boolean tableResult = tablePattern.matches(input);
+                    boolean jitResult = jitPattern.matches(input);
                     
                     // If there's inconsistency, debug it
-                    if (dfaResult || backtrackResult || tableResult) {
-                        System.err.printf("INCONSISTENCY for pattern '%s' with input '%s': DFA=%s, Backtrack=%s, Table=%s%n",
-                            testCase.pattern, input, dfaResult, backtrackResult, tableResult);
+                    if (dfaResult || backtrackResult || tableResult || jitResult) {
+                        System.err.printf("INCONSISTENCY for pattern '%s' with input '%s': DFA=%s, Backtrack=%s, Table=%s, JIT=%s%n",
+                            testCase.pattern, input, dfaResult, backtrackResult, tableResult, jitResult);
                         
                         // For now, allow Table implementation to be different since it might have bugs
-                        assertFalse(dfaResult || backtrackResult,
-                            String.format("DFA and Backtrack should both reject '%s' for pattern '%s'. " +
-                                "DFA: %s, Backtrack: %s", input, testCase.pattern, dfaResult, backtrackResult));
+                        assertFalse(dfaResult || backtrackResult || jitResult,
+                            String.format("DFA, Backtrack, and JIT should all reject '%s' for pattern '%s'. " +
+                                "DFA: %s, Backtrack: %s, JIT: %s", input, testCase.pattern, dfaResult, backtrackResult, jitResult));
                     }
                 }
                 
@@ -460,6 +465,57 @@ public class PatternTest {
         return strings;
     }
     
+    // ============================================
+    // JIT-SPECIFIC TESTS
+    // ============================================
+    
+    @Test
+    @DisplayName("JIT implementation should provide correct metadata")
+    void testJITMetadata() throws RegexCompileException {
+        Pattern jitPattern = Pattern.compileJIT("a*b+");
+        
+        assertEquals("JIT", jitPattern.getImplementationName());
+        assertEquals("a*b+", jitPattern.pattern());
+        
+        Map<String, Object> stats = jitPattern.getCompilationStats();
+        assertNotNull(stats);
+        assertEquals("a*b+", stats.get("patternString"));
+        assertEquals("JIT", stats.get("implementation"));
+        assertTrue(stats.containsKey("stateCount"));
+        assertTrue(stats.containsKey("alphabetSize"));
+        assertTrue(stats.containsKey("compiledClass"));
+        
+        // Verify compiled class exists and is properly named
+        String className = (String) stats.get("compiledClass");
+        assertTrue(className.startsWith("GeneratedRegex_"));
+    }
+
+    @Test
+    @DisplayName("JIT should handle edge cases correctly")
+    void testJITEdgeCases() throws RegexCompileException {
+        // Empty string pattern
+        Pattern emptyPattern = Pattern.compileJIT("");
+        assertTrue(emptyPattern.matches(""));
+        assertFalse(emptyPattern.matches("a"));
+        
+        // Single character
+        Pattern singleChar = Pattern.compileJIT("x");
+        assertTrue(singleChar.matches("x"));
+        assertFalse(singleChar.matches(""));
+        assertFalse(singleChar.matches("xx"));
+        
+        // Complex pattern
+        Pattern complex = Pattern.compileJIT("(a|b)*c+d?");
+        assertTrue(complex.matches("c"));
+        assertTrue(complex.matches("cd"));
+        assertTrue(complex.matches("abc"));
+        assertTrue(complex.matches("abcd"));
+        assertTrue(complex.matches("aabbcc"));
+        assertFalse(complex.matches(""));
+        assertFalse(complex.matches("d"));
+        assertFalse(complex.matches("abcde"));
+    }
+
     // ============================================
     // EXAMPLE OF HOW TO ADD NEW TESTS
     // ============================================

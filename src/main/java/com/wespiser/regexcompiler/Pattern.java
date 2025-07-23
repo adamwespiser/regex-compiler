@@ -74,6 +74,13 @@ public interface Pattern {
     static Pattern compileTable(String regex) throws RegexCompileException {
         return new TableDriven().compile(regex);
     }
+    
+    /**
+     * Factory method to create a JIT bytecode implementation for maximum performance
+     */
+    static Pattern compileJIT(String regex) throws RegexCompileException {
+        return new JITRegexPattern(regex);
+    }
 }
 
 /**

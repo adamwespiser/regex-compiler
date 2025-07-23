@@ -2,7 +2,7 @@
 
 # Regex Compiler Benchmark Script
 # ================================
-# This script runs comprehensive benchmarks comparing DFA, Backtrack, and Table algorithms
+# This script runs comprehensive benchmarks comparing DFA, Backtrack, Table, and JIT algorithms
 # across different data sizes and outputs results to CSV for analysis.
 
 set -e  # Exit on any error

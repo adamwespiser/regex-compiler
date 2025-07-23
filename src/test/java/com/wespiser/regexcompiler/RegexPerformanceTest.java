@@ -85,6 +85,7 @@ public class RegexPerformanceTest {
             Pattern dfaPattern = Pattern.compileDFA(testCase.pattern);
             Pattern backtrackPattern = Pattern.compileBacktrack(testCase.pattern);
             Pattern tablePattern = Pattern.compileTable(testCase.pattern);
+            Pattern jitPattern = Pattern.compileJIT(testCase.pattern);
             
             // Test compilation performance
             System.out.println("COMPILATION PERFORMANCE:");
@@ -103,6 +104,11 @@ public class RegexPerformanceTest {
                 catch (RegexCompileException e) { throw new RuntimeException(e); }
             });
             
+            benchmarkCompilation("JIT", () -> {
+                try { return Pattern.compileJIT(testCase.pattern); }
+                catch (RegexCompileException e) { throw new RuntimeException(e); }
+            });
+            
             System.out.println();
             
             // Test matching performance for each input string
@@ -114,15 +120,17 @@ public class RegexPerformanceTest {
                 boolean dfaResult = dfaPattern.matches(input);
                 boolean backtrackResult = backtrackPattern.matches(input);
                 boolean tableResult = tablePattern.matches(input);
+                boolean jitResult = jitPattern.matches(input);
                 
-                if (dfaResult != backtrackResult || dfaResult != tableResult) {
-                    System.err.printf("  WARNING: Inconsistent results! DFA: %s, Backtrack: %s, Table: %s%n",
-                                    dfaResult, backtrackResult, tableResult);
+                if (dfaResult != backtrackResult || dfaResult != tableResult || dfaResult != jitResult) {
+                    System.err.printf("  WARNING: Inconsistent results! DFA: %s, Backtrack: %s, Table: %s, JIT: %s%n",
+                                    dfaResult, backtrackResult, tableResult, jitResult);
                 }
                 
                 benchmarkMatching("  DFA", dfaPattern, input);
                 benchmarkMatching("  Backtrack", backtrackPattern, input);
                 benchmarkMatching("  Table", tablePattern, input);
+                benchmarkMatching("  JIT", jitPattern, input);
                 System.out.println();
             }
             
@@ -183,20 +191,24 @@ public class RegexPerformanceTest {
                 Pattern dfaPattern = Pattern.compileDFA(pattern);
                 Pattern backtrackPattern = Pattern.compileBacktrack(pattern);
                 Pattern tablePattern = Pattern.compileTable(pattern);
+                Pattern jitPattern = Pattern.compileJIT(pattern);
                 
                 for (String input : summaryInputs) {
                     // Benchmark each implementation
                     long dfaTime = benchmarkSingle(dfaPattern, input);
                     long backtrackTime = benchmarkSingle(backtrackPattern, input);
                     long tableTime = benchmarkSingle(tablePattern, input);
+                    long jitTime = benchmarkSingle(jitPattern, input);
                     
                     totalTimes.merge("DFA", dfaTime, Long::sum);
                     totalTimes.merge("Backtrack", backtrackTime, Long::sum);
                     totalTimes.merge("Table", tableTime, Long::sum);
+                    totalTimes.merge("JIT", jitTime, Long::sum);
                     
                     counts.merge("DFA", 1, Integer::sum);
                     counts.merge("Backtrack", 1, Integer::sum);
                     counts.merge("Table", 1, Integer::sum);
+                    counts.merge("JIT", 1, Integer::sum);
                 }
             } catch (RegexCompileException e) {
                 System.err.println("Failed summary test for pattern: " + pattern);
@@ -204,7 +216,7 @@ public class RegexPerformanceTest {
         }
         
         // Print average results
-        for (String impl : Arrays.asList("DFA", "Backtrack", "Table")) {
+        for (String impl : Arrays.asList("DFA", "Backtrack", "Table", "JIT")) {
             long totalTime = totalTimes.getOrDefault(impl, 0L);
             int count = counts.getOrDefault(impl, 1);
             double avgTime = totalTime / (double) count;

@@ -37,7 +37,7 @@ public class Driver {
             // Validate algorithm
             if (!isValidAlgorithm(algorithm)) {
                 System.err.println("Error: Invalid algorithm '" + algorithm + "'");
-                System.err.println("Valid algorithms: DFA, Backtrack, Table");
+                System.err.println("Valid algorithms: DFA, Backtrack, Table, JIT");
                 System.exit(1);
             }
             
@@ -97,7 +97,8 @@ public class Driver {
     private static boolean isValidAlgorithm(String algorithm) {
         return algorithm.equals("DFA") || 
                algorithm.equals("Backtrack") || 
-               algorithm.equals("Table");
+               algorithm.equals("Table") ||
+               algorithm.equals("JIT");
     }
     
     /**
@@ -137,6 +138,9 @@ public class Driver {
                 break;
             case "Table":
                 compiledPattern = Pattern.compileTable(pattern);
+                break;
+            case "JIT":
+                compiledPattern = Pattern.compileJIT(pattern);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid algorithm: " + algorithm);

@@ -40,7 +40,7 @@ data_clean$memoryUsedKB <- data_clean$memoryUsedBytes / 1024
 data_clean$processingTimeUs <- data_clean$processingTimeNs / 1000
 
 # Define consistent colors for algorithms
-algorithm_colors <- c("DFA" = "#1f77b4", "Backtrack" = "#ff7f0e", "Table" = "#2ca02c")
+algorithm_colors <- c("DFA" = "#1f77b4", "Backtrack" = "#ff7f0e", "Table" = "#2ca02c", "JIT" = "#d62728")
 
 # Create memory usage whisker plot
 cat("Creating memory usage plot...\n")
@@ -205,3 +205,4 @@ cat("\nKey Findings:\n")
 cat("  - DFA: High memory usage, moderate processing time\n")
 cat("  - Backtrack: Low memory usage, variable processing time\n") 
 cat("  - Table: Moderate memory usage, optimized processing time\n")
+cat("  - JIT: Higher compilation overhead, optimized for complex patterns\n")
