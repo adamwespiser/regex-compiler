@@ -31,7 +31,7 @@ echo "✓ Project compiled successfully"
 
 echo
 echo "Step 2: Generating test data..."
-java -cp target/classes com.wespiser.regexcompiler.BenchmarkDataGenerator
+mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.BenchmarkDataGenerator" -q
 if [ $? -ne 0 ]; then
     echo "Error: Failed to generate test data"
     exit 1
@@ -48,7 +48,7 @@ export JAVA_OPTS="-server -Xmx4g -Xms2g -XX:+UseG1GC -XX:+UnlockExperimentalVMOp
 
 start_time=$(date +%s)
 
-java $JAVA_OPTS -cp target/classes com.wespiser.regexcompiler.RegexBenchmark
+mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexBenchmark" -Dexec.args="" -q
 benchmark_exit_code=$?
 
 end_time=$(date +%s)

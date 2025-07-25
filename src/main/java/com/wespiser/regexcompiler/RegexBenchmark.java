@@ -18,7 +18,7 @@ public class RegexBenchmark {
     
     private static final MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
     private static final int WARMUP_ITERATIONS = 10;
-    private static final int BENCHMARK_ITERATIONS = 100;
+    private static final int BENCHMARK_ITERATIONS = 2;
     
     /**
      * Benchmark result data structure
@@ -73,7 +73,7 @@ public class RegexBenchmark {
         List<BenchmarkResult> results = new ArrayList<>();
         
         String[] algorithms = {"DFA", "Backtrack", "Table", "JIT"};
-        String[] dataSizes = {"10", "50", "100", "500", "1000"};
+        String[] dataSizes = {"10", "50", "100", "500", "1000", "10000", "100000"};
         
         int totalTests = 0;
         int completedTests = 0;

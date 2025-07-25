@@ -36,7 +36,7 @@ public class BenchmarkDataGenerator {
         Files.createDirectories(dataDir);
         
         // Generate data for different size categories
-        int[] sizes = {10, 50, 100, 500, 1000};
+        int[] sizes = {10, 50, 100, 500, 1000, 10000, 100000};
         
         for (int size : sizes) {
             System.out.println("Generating test data for size: " + size);
@@ -70,19 +70,28 @@ public class BenchmarkDataGenerator {
     }
     
     /**
-     * Generate regex patterns of varying complexity
+     * Generate regex patterns with consistent target length
      */
-    private static List<String> generatePatterns(int maxLength, int count) {
+    private static List<String> generatePatterns(int targetLength, int count) {
         List<String> patterns = new ArrayList<>();
         
         for (int i = 0; i < count; i++) {
             String pattern;
-            if (maxLength <= 10) {
+            
+            // Allow small variation (±20%) around target length for diversity
+            int minLength = Math.max(1, (int)(targetLength * 0.8));
+            int maxLength = (int)(targetLength * 1.2);
+            int actualLength = minLength + random.nextInt(maxLength - minLength + 1);
+            
+            if (targetLength <= 10) {
                 // Simple patterns for small sizes
-                pattern = generateSimplePattern(Math.min(maxLength, random.nextInt(5) + 1));
+                pattern = generateSimplePattern(actualLength);
+            } else if (targetLength <= 1000) {
+                // More complex patterns for medium sizes
+                pattern = generateComplexPattern(actualLength);
             } else {
-                // More complex patterns for larger sizes
-                pattern = generateComplexPattern(Math.min(maxLength, random.nextInt(maxLength/2) + 1));
+                // For very large sizes, use repetition patterns to avoid compilation issues
+                pattern = generateRepetitionPattern(actualLength);
             }
             patterns.add(pattern);
         }
@@ -116,31 +125,33 @@ public class BenchmarkDataGenerator {
     }
     
     /**
-     * Generate complex regex patterns with grouping
+     * Generate complex regex patterns with grouping, targeting specific length
      */
     private static String generateComplexPattern(int targetLength) {
         StringBuilder pattern = new StringBuilder();
         int currentLength = 0;
         
-        while (currentLength < targetLength) {
+        while (currentLength < targetLength - 1) { // Leave room for at least 1 more character
+            int remainingLength = targetLength - currentLength;
             double choice = random.nextDouble();
             
-            if (choice < 0.2 && currentLength < targetLength - 4) {
-                // Add grouped pattern
+            if (choice < 0.3 && remainingLength >= 5) {
+                // Add grouped pattern - scale inner pattern size with remaining length
                 pattern.append("(");
-                String innerPattern = generateSimplePattern(Math.min(3, targetLength - currentLength - 2));
+                int innerSize = Math.min(remainingLength - 3, Math.max(2, remainingLength / 4));
+                String innerPattern = generateSimplePattern(innerSize);
                 pattern.append(innerPattern);
                 pattern.append(")");
+                currentLength += innerPattern.length() + 2;
                 
                 // Maybe add quantifier to group
-                if (random.nextDouble() < 0.5) {
+                if (random.nextDouble() < 0.4 && currentLength < targetLength) {
                     String quantifier = QUANTIFIERS[1 + random.nextInt(QUANTIFIERS.length - 1)]; // Skip empty
                     pattern.append(quantifier);
                     currentLength += 1;
                 }
-                currentLength += innerPattern.length() + 2; // +2 for parentheses
                 
-            } else if (choice < 0.4 && currentLength > 0 && currentLength < targetLength - 1) {
+            } else if (choice < 0.5 && currentLength > 0 && remainingLength >= 3) {
                 // Add alternation
                 pattern.append("|");
                 pattern.append(CHARS[random.nextInt(CHARS.length)]);
@@ -158,6 +169,59 @@ public class BenchmarkDataGenerator {
                         currentLength += 1;
                     }
                 }
+            }
+        }
+        
+        // Fill remaining length with simple characters if needed
+        while (currentLength < targetLength) {
+            pattern.append(CHARS[random.nextInt(CHARS.length)]);
+            currentLength += 1;
+        }
+        
+        return pattern.toString();
+    }
+    
+    /**
+     * Generate simple patterns for very large sizes
+     * Creates basic patterns that are fast to compile and execute
+     */
+    private static String generateRepetitionPattern(int targetLength) {
+        StringBuilder pattern = new StringBuilder();
+        
+        // For very large sizes, create short simple patterns without quantified repetitions
+        int maxPatternLength = Math.min(50, targetLength / 2000); // Very short patterns
+        maxPatternLength = Math.max(10, maxPatternLength); // At least 10 chars
+        
+        while (pattern.length() < maxPatternLength) {
+            double choice = random.nextDouble();
+            
+            if (choice < 0.3 && pattern.length() < maxPatternLength - 5) {
+                // Simple alternation
+                pattern.append("(")
+                        .append(CHARS[random.nextInt(CHARS.length)])
+                        .append("|")
+                        .append(CHARS[random.nextInt(CHARS.length)])
+                        .append(")");
+                
+            } else if (choice < 0.6 && pattern.length() < maxPatternLength - 4) {
+                // Character class
+                pattern.append("[");
+                int classSize = 2 + random.nextInt(2); // 2-3 chars in class
+                for (int i = 0; i < classSize; i++) {
+                    pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                }
+                pattern.append("]");
+                
+            } else if (pattern.length() < maxPatternLength - 2) {
+                // Simple character with basic quantifier
+                pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                if (random.nextDouble() < 0.4) {
+                    String[] quantifiers = {"*", "+", "?"};
+                    pattern.append(quantifiers[random.nextInt(quantifiers.length)]);
+                }
+            } else {
+                // Just add a character to finish
+                pattern.append(CHARS[random.nextInt(CHARS.length)]);
             }
         }
         

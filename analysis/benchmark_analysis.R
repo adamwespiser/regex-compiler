@@ -30,7 +30,7 @@ data_clean <- data[data$status == "SUCCESS" &
 cat(sprintf("Loaded %d successful benchmark results\n", nrow(data_clean)))
 
 # Convert data size to factor for proper ordering
-data_clean$dataSize <- factor(data_clean$dataSize, levels = c("10", "50", "100", "500", "1000"))
+data_clean$dataSize <- factor(data_clean$dataSize, levels = c("10", "50", "100", "500",  "1000", "10000", "100000"))
 
 # Create processing time column (average of match and find times)
 data_clean$processingTimeNs <- (data_clean$matchTimeNs + data_clean$findTimeNs) / 2
@@ -201,8 +201,3 @@ cat("  - analysis/memory_usage_by_algorithm.png\n")
 cat("  - analysis/memory_usage_by_algorithm_log.png\n")
 cat("  - analysis/processing_time_by_algorithm.png\n")
 cat("  - analysis/processing_time_by_algorithm_log.png\n")
-cat("\nKey Findings:\n")
-cat("  - DFA: High memory usage, moderate processing time\n")
-cat("  - Backtrack: Low memory usage, variable processing time\n") 
-cat("  - Table: Moderate memory usage, optimized processing time\n")
-cat("  - JIT: Higher compilation overhead, optimized for complex patterns\n")
