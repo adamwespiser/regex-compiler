@@ -36,7 +36,7 @@ public class BenchmarkDataGenerator {
         Files.createDirectories(dataDir);
         
         // Generate data for different size categories
-        int[] sizes = {10, 50, 100, 500, 1000, 10000, 100000};
+        int[] sizes = {10, 50, 100, 500, 1000, 10000};
         
         for (int size : sizes) {
             System.out.println("Generating test data for size: " + size);

@@ -12,9 +12,14 @@ echo "Regex Compiler Benchmark Suite"
 echo "=================================="
 echo
 
-# Check if Maven is available
-if ! command -v mvn &> /dev/null; then
-    echo "Error: Maven is not installed or not in PATH"
+# Check if ./mvn24 script is available
+if [ ! -f "./mvn24.sh" ]; then
+    echo "Error: ./mvn24.sh script not found"
+    exit 1
+fi
+
+if [ ! -x "./mvn24.sh" ]; then
+    echo "Error: ./mvn24.sh script is not executable"
     exit 1
 fi
 
@@ -22,7 +27,7 @@ fi
 export MAVEN_OPTS="-Xmx4g -Xms1g -XX:+UseG1GC"
 
 echo "Step 1: Compiling project..."
-mvn compile -q
+./mvn24.sh compile -q
 if [ $? -ne 0 ]; then
     echo "Error: Failed to compile project"
     exit 1
@@ -31,7 +36,7 @@ echo "✓ Project compiled successfully"
 
 echo
 echo "Step 2: Generating test data..."
-mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.BenchmarkDataGenerator" -q
+./mvn24.sh exec:java -Dexec.mainClass="com.wespiser.regexcompiler.BenchmarkDataGenerator" -q
 if [ $? -ne 0 ]; then
     echo "Error: Failed to generate test data"
     exit 1
@@ -48,7 +53,7 @@ export JAVA_OPTS="-server -Xmx4g -Xms2g -XX:+UseG1GC -XX:+UnlockExperimentalVMOp
 
 start_time=$(date +%s)
 
-mvn exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexBenchmark" -Dexec.args="" -q
+./mvn24.sh exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexBenchmark" -Dexec.args="" -q
 benchmark_exit_code=$?
 
 end_time=$(date +%s)

@@ -1,5 +1,8 @@
-package com.wespiser.regexcompiler;
+package com.wespiser.regexcompiler.algorithms;
 
+import com.wespiser.regexcompiler.Pattern;
+import com.wespiser.regexcompiler.RegexCompileException;
+import com.wespiser.regexcompiler.Parser;
 import java.util.*;
 
 /**

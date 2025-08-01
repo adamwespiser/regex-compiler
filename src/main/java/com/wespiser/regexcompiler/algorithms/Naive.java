@@ -1,11 +1,23 @@
-package com.wespiser.regexcompiler;
+package com.wespiser.regexcompiler.algorithms;
 
+import com.wespiser.regexcompiler.Pattern;
+import com.wespiser.regexcompiler.RegexCompileException;
+import com.wespiser.regexcompiler.Parser;
 import java.util.Map;
 
 /**
- * DFA-based implementation using our existing RegexToDFA converter
+ * Naive DFA-based implementation using our existing RegexToDFA converter
+ * The Naive algorithm converts the regex into a deterministic finite state machine using Thompson's
+ * construction followed by subset construction. It first parses the regex into an abstract syntax tree,
+ * then converts it to an NFA (Nondeterministic Finite Automaton) using Thompson's method, and finally
+ * determinizes it using the powerset construction. The resulting DFA has exactly one transition per
+ * input character from each state, making matching very efficient with O(n) time complexity where n is
+ * the input length. Space complexity is O(2^m) in the worst case where m is the number of NFA states,
+ * though practical patterns often result in much smaller DFAs. The strategy provides guaranteed
+ * linear-time matching by pre-computing all possible state transitions, eliminating backtracking
+ * entirely.
  */
-class DFARegexPattern implements Pattern {
+public class Naive implements Pattern {
     private String patternString;
     private RegexToDFA.DFA dfa;
     private Map<String, Object> stats;
@@ -16,7 +28,7 @@ class DFARegexPattern implements Pattern {
         long startTime = System.nanoTime();
         
         try {
-            DFARegexPattern compiled = new DFARegexPattern();
+            Naive compiled = new Naive();
             compiled.patternString = regex;
             
             RegexToDFA converter = new RegexToDFA();
@@ -27,7 +39,7 @@ class DFARegexPattern implements Pattern {
                 "compileTimeNs", compiled.compileTime,
                 "stateCount", compiled.dfa.states.size(),
                 "alphabetSize", compiled.dfa.alphabet.size(),
-                "implementation", "DFA"
+                "implementation", "Naive"
             );
             
             return compiled;
@@ -62,7 +74,7 @@ class DFARegexPattern implements Pattern {
     
     @Override
     public String getImplementationName() {
-        return "DFA-based (Deterministic Finite Automaton)";
+        return "Naive DFA-based (Deterministic Finite Automaton)";
     }
     
     @Override

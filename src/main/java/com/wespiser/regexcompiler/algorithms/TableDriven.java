@@ -1,11 +1,23 @@
-package com.wespiser.regexcompiler;
+package com.wespiser.regexcompiler.algorithms;
 
+import com.wespiser.regexcompiler.Pattern;
+import com.wespiser.regexcompiler.RegexCompileException;
+import com.wespiser.regexcompiler.Parser;
 import java.util.*;
 
 /**
  * Table-driven implementation with DFA optimization and transition table conversion
+ *
+ *  The table-driven algorithm first converts the regex to an optimized DFA, then transforms it into a
+ *  compact 2D transition table representation. States are mapped to integer indices, and characters in
+ *  the alphabet are mapped to column indices, creating a dense integer matrix where table[state][char]
+ *  gives the next state (-1 for no transition). Runtime complexity is O(n) for matching, with very fast
+ *  constant-time state transitions via array lookups. Space complexity is O(s×a) where s is the number of
+ *   states and a is the alphabet size. The strategy optimizes for runtime performance by trading space
+ *  for speed, using simple array indexing instead of hash map lookups, making it ideal for
+ *  high-performance applications where the alphabet size is reasonable.
  */
-class TableDriven implements Pattern {
+public class TableDriven implements Pattern {
     private String patternString;
     private int[][] transitionTable;
     private boolean[] acceptingStates;

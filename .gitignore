@@ -39,3 +39,11 @@ Thumbs.db
 
 # Build output
 /build/
+
+# Benchmark results and test files
+benchmark_results.csv
+size_100000_proof.csv
+*.class
+TestJIT.java
+QuickJITTest.java
+DiagnoseBenchmarkData.java

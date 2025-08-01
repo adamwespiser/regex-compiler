@@ -30,7 +30,7 @@ data_clean <- data[data$status == "SUCCESS" &
 cat(sprintf("Loaded %d successful benchmark results\n", nrow(data_clean)))
 
 # Convert data size to factor for proper ordering
-data_clean$dataSize <- factor(data_clean$dataSize, levels = c("10", "50", "100", "500",  "1000", "10000", "100000"))
+data_clean$dataSize <- factor(data_clean$dataSize, levels = c("10", "50", "100", "500",  "1000", "10000"))
 
 # Create processing time column (average of match and find times)
 data_clean$processingTimeNs <- (data_clean$matchTimeNs + data_clean$findTimeNs) / 2
@@ -38,9 +38,10 @@ data_clean$processingTimeNs <- (data_clean$matchTimeNs + data_clean$findTimeNs) 
 # Convert to more readable units
 data_clean$memoryUsedKB <- data_clean$memoryUsedBytes / 1024
 data_clean$processingTimeUs <- data_clean$processingTimeNs / 1000
+data_clean$matchTimeUs <- data_clean$matchTimeNs / 1000
 
 # Define consistent colors for algorithms
-algorithm_colors <- c("DFA" = "#1f77b4", "Backtrack" = "#ff7f0e", "Table" = "#2ca02c", "JIT" = "#d62728")
+algorithm_colors <- c("Naive" = "#1f77b4", "Backtrack" = "#ff7f0e", "Table" = "#2ca02c", "JIT" = "#d62728")
 
 # Create memory usage whisker plot
 cat("Creating memory usage plot...\n")
@@ -124,6 +125,46 @@ time_plot_log <- ggplot(data_clean, aes(x = dataSize, y = processingTimeUs, fill
     panel.grid.minor = element_blank()
   )
 
+# Create match time whisker plot
+cat("Creating match time plot...\n")
+match_plot <- ggplot(data_clean, aes(x = dataSize, y = matchTimeUs, fill = algorithm)) +
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  scale_fill_manual(values = algorithm_colors, name = "Algorithm") +
+  scale_y_continuous(labels = comma_format(suffix = " μs")) +
+  labs(
+    title = "Match Time by Algorithm and Data Size",
+    subtitle = "Whisker plots showing distribution of match() operation time",
+    x = "Data Size (Pattern/Input Length)",
+    y = "Match Time (microseconds)",
+    caption = "Boxes show quartiles, whiskers show 1.5*IQR range"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray60"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+match_plot_log <- ggplot(data_clean, aes(x = dataSize, y = matchTimeUs, fill = algorithm)) +
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  scale_fill_manual(values = algorithm_colors, name = "Algorithm") +
+  scale_y_log10(labels = comma_format(suffix = " μs")) +
+  labs(
+    title = "Match Time by Algorithm and Data Size (Log Scale)",
+    subtitle = "Whisker plots showing distribution of match() operation time",
+    x = "Data Size (Pattern/Input Length)",
+    y = "Match Time (microseconds) - Log Scale",
+    caption = "Boxes show quartiles, whiskers show 1.5*IQR range"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray60"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
 # Save plots
 cat("Saving plots to analysis/ directory...\n")
 ggsave("analysis/memory_usage_by_algorithm.png", memory_plot, 
@@ -136,6 +177,12 @@ ggsave("analysis/processing_time_by_algorithm.png", time_plot,
        width = 10, height = 6, dpi = 300, bg = "white")
 
 ggsave("analysis/processing_time_by_algorithm_log.png", time_plot_log, 
+       width = 10, height = 6, dpi = 300, bg = "white")
+
+ggsave("analysis/match_time_by_algorithm.png", match_plot, 
+       width = 10, height = 6, dpi = 300, bg = "white")
+
+ggsave("analysis/match_time_by_algorithm_log.png", match_plot_log, 
        width = 10, height = 6, dpi = 300, bg = "white")
 
 # Print summary statistics using base R
@@ -172,6 +219,19 @@ time_summary <- data.frame(
 )
 print(time_summary)
 
+# Match time summary by algorithm
+cat("\nMatch Time Summary (μs):\n")
+match_summary <- data.frame(
+  algorithm = algorithms,
+  min = sapply(algorithms, function(a) min(data_clean$matchTimeUs[data_clean$algorithm == a])),
+  q1 = sapply(algorithms, function(a) quantile(data_clean$matchTimeUs[data_clean$algorithm == a], 0.25)),
+  median = sapply(algorithms, function(a) median(data_clean$matchTimeUs[data_clean$algorithm == a])),
+  mean = sapply(algorithms, function(a) mean(data_clean$matchTimeUs[data_clean$algorithm == a])),
+  q3 = sapply(algorithms, function(a) quantile(data_clean$matchTimeUs[data_clean$algorithm == a], 0.75)),
+  max = sapply(algorithms, function(a) max(data_clean$matchTimeUs[data_clean$algorithm == a]))
+)
+print(match_summary)
+
 # Results by data size and algorithm
 cat("\nResults by Data Size:\n")
 sizes <- unique(data_clean$dataSize)
@@ -201,3 +261,5 @@ cat("  - analysis/memory_usage_by_algorithm.png\n")
 cat("  - analysis/memory_usage_by_algorithm_log.png\n")
 cat("  - analysis/processing_time_by_algorithm.png\n")
 cat("  - analysis/processing_time_by_algorithm_log.png\n")
+cat("  - analysis/match_time_by_algorithm.png\n")
+cat("  - analysis/match_time_by_algorithm_log.png\n")

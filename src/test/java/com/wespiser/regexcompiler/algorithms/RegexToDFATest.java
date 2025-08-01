@@ -1,5 +1,6 @@
-package com.wespiser.regexcompiler;
+package com.wespiser.regexcompiler.algorithms;
 
+import com.wespiser.regexcompiler.Parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

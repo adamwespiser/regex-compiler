@@ -1,5 +1,9 @@
 package com.wespiser.regexcompiler;
 
+import com.wespiser.regexcompiler.algorithms.Naive;
+import com.wespiser.regexcompiler.algorithms.Backtrack;
+import com.wespiser.regexcompiler.algorithms.TableDriven;
+import com.wespiser.regexcompiler.algorithms.JITRegexPattern;
 import java.util.*;
 
 /**
@@ -58,7 +62,7 @@ public interface Pattern {
      * Factory method to create a DFA-based implementation
      */
     static Pattern compileDFA(String regex) throws RegexCompileException {
-        return new DFARegexPattern().compile(regex);
+        return new Naive().compile(regex);
     }
     
     /**
@@ -80,18 +84,5 @@ public interface Pattern {
      */
     static Pattern compileJIT(String regex) throws RegexCompileException {
         return new JITRegexPattern(regex);
-    }
-}
-
-/**
- * Exception thrown when regex compilation fails
- */
-class RegexCompileException extends Exception {
-    public RegexCompileException(String message) {
-        super(message);
-    }
-    
-    public RegexCompileException(String message, Throwable cause) {
-        super(message, cause);
     }
 }

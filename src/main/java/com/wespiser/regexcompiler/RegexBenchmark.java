@@ -72,8 +72,8 @@ public class RegexBenchmark {
     public static void runComprehensiveBenchmark() throws IOException {
         List<BenchmarkResult> results = new ArrayList<>();
         
-        String[] algorithms = {"DFA", "Backtrack", "Table", "JIT"};
-        String[] dataSizes = {"10", "50", "100", "500", "1000", "10000", "100000"};
+        String[] algorithms = {"Naive", "Backtrack", "Table", "JIT"};
+        String[] dataSizes = {"10", "50", "100", "500", "1000", "10000"};
         
         int totalTests = 0;
         int completedTests = 0;
@@ -229,7 +229,7 @@ public class RegexBenchmark {
     private static Pattern compilePattern(String algorithm, String pattern) 
             throws RegexCompileException {
         switch (algorithm) {
-            case "DFA":
+            case "Naive":
                 return Pattern.compileDFA(pattern);
             case "Backtrack":
                 return Pattern.compileBacktrack(pattern);
@@ -329,7 +329,7 @@ public class RegexBenchmark {
         
         if (successCount > 0) {
             // Calculate average times by algorithm
-            String[] algorithms = {"DFA", "Backtrack", "Table", "JIT"};
+            String[] algorithms = {"Naive", "Backtrack", "Table", "JIT"};
             
             System.out.println("\nAverage Performance by Algorithm:");
             System.out.println("---------------------------------");

@@ -1,11 +1,14 @@
-package com.wespiser.regexcompiler;
+package com.wespiser.regexcompiler.algorithms;
 
+import com.wespiser.regexcompiler.Pattern;
+import com.wespiser.regexcompiler.RegexCompileException;
+import com.wespiser.regexcompiler.Parser;
 import java.util.Map;
 
 /**
  * Backtracking implementation (recursive approach)
  */
-class Backtrack implements Pattern {
+public class Backtrack implements Pattern {
     private String patternString;
     private Parser.RegexNode ast;
     private Map<String, Object> stats;
