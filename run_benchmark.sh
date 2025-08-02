@@ -12,13 +12,12 @@ echo "Regex Compiler Benchmark Suite"
 echo "=================================="
 echo
 
-# Check if ./mvn24 script is available
-if [ ! -f "./mvn24.sh" ]; then
+if [ ! -f "./mvn24" ]; then
     echo "Error: ./mvn24.sh script not found"
     exit 1
 fi
 
-if [ ! -x "./mvn24.sh" ]; then
+if [ ! -x "./mvn24" ]; then
     echo "Error: ./mvn24.sh script is not executable"
     exit 1
 fi
@@ -36,7 +35,7 @@ echo "✓ Project compiled successfully"
 
 echo
 echo "Step 2: Generating test data..."
-./mvn24.sh exec:java -Dexec.mainClass="com.wespiser.regexcompiler.BenchmarkDataGenerator" -q
+./mvn24 exec:java -Dexec.mainClass="com.wespiser.regexcompiler.BenchmarkDataGenerator" -q
 if [ $? -ne 0 ]; then
     echo "Error: Failed to generate test data"
     exit 1

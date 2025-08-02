@@ -29,16 +29,7 @@ mvn clean compile test-compile test
 ./mvn24 exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexPerformanceTest" -Dexec.classpathScope="test" -X
 ```
 
-### Performance Results
-
-```
-Performance ranking (lower is better):
-  Table: 13.5 ns/match
-  DFA: 14.1 ns/match
-  Backtrack: 16.7 ns/match
-```
-
-## Comprehensive Benchmarking
+## Benchmarking
 
 This project includes a comprehensive benchmarking system that compares memory usage and processing time across all three regex implementations (DFA, Backtrack, Table) using generated test data of varying sizes.
 
@@ -49,22 +40,6 @@ The benchmark system generates test data and measures performance across differe
 **Quick start:**
 ```bash
 ./run_benchmark.sh
-```
-
-**Manual steps:**
-```bash
-# 1. Compile the project
-mvn clean compile
-
-# 2. Generate test data
-java -cp target/classes com.wespiser.regexcompiler.BenchmarkDataGenerator
-
-# 3. Run benchmarks (may take several minutes)
-java -cp target/classes com.wespiser.regexcompiler.RegexBenchmark
-
-# 4. Generate analysis plots (requires R with ggplot2)
-cd analysis
-Rscript benchmark_analysis.R
 ```
 
 ### Benchmark Results
@@ -78,24 +53,16 @@ The benchmark measures:
 
 ![Memory Usage by Algorithm](analysis/memory_usage_by_algorithm.png)
 
-*Whisker plot showing memory footprint distribution across data sizes. DFA shows highest memory usage due to state tables, Backtrack shows lowest with simple parse trees.*
-
 ![Memory Usage by Algorithm (Log Scale)](analysis/memory_usage_by_algorithm_log.png)
-
-*Same data with logarithmic y-axis to better show relative differences between algorithms.*
 
 #### Processing Time Comparison
 
 ![Processing Time by Algorithm](analysis/processing_time_by_algorithm.png)
 
-*Whisker plot showing processing time distribution across data sizes. Shows average of match() and find() operation times.*
-
 ![Processing Time by Algorithm (Log Scale)](analysis/processing_time_by_algorithm_log.png)
 
-*Same data with logarithmic y-axis to highlight performance variations across different pattern complexities.*
+#### Match Time Comparison
 
-### Key Findings
+![Match Time by Algorithm](analysis/match_time_by_algorithm.png)
 
-- **DFA**: High memory usage (1-29 KB), moderate processing time. Best for repeated pattern matching.
-- **Backtrack**: Low memory usage (141-869 bytes), variable processing time. Memory efficient but can be slow on complex patterns.
-- **Table**: Moderate memory usage (453-1197 bytes), optimized processing time. Good balance of memory and performance.
+![Match Time by Algorithm (Log Scale)](analysis/match_time_by_algorithm_log.png)
