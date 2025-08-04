@@ -13,12 +13,12 @@ echo "=================================="
 echo
 
 if [ ! -f "./mvn24" ]; then
-    echo "Error: ./mvn24.sh script not found"
+    echo "Error: ./mvn24 script not found"
     exit 1
 fi
 
 if [ ! -x "./mvn24" ]; then
-    echo "Error: ./mvn24.sh script is not executable"
+    echo "Error: ./mvn24 script is not executable"
     exit 1
 fi
 
@@ -26,7 +26,7 @@ fi
 export MAVEN_OPTS="-Xmx4g -Xms1g -XX:+UseG1GC"
 
 echo "Step 1: Compiling project..."
-./mvn24.sh compile -q
+./mvn24 compile -q
 if [ $? -ne 0 ]; then
     echo "Error: Failed to compile project"
     exit 1
@@ -52,7 +52,7 @@ export JAVA_OPTS="-server -Xmx4g -Xms2g -XX:+UseG1GC -XX:+UnlockExperimentalVMOp
 
 start_time=$(date +%s)
 
-./mvn24.sh exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexBenchmark" -Dexec.args="" -q
+./mvn24 exec:java -Dexec.mainClass="com.wespiser.regexcompiler.RegexBenchmark" -Dexec.args="" -q
 benchmark_exit_code=$?
 
 end_time=$(date +%s)

@@ -16,6 +16,7 @@ public class BenchmarkDataGenerator {
     // Basic regex components for generating patterns
     private static final String[] CHARS = {"a", "b", "c", "d", "e"};
     private static final String[] QUANTIFIERS = {"", "*", "+", "?"};
+    private static final String[] BASIC_QUANTIFIERS = {"*", "+", "?"}; // Exclude empty to avoid consecutive quantifiers
     private static final String[] OPERATORS = {"|", ""};
     
     public static void main(String[] args) {
@@ -83,16 +84,27 @@ public class BenchmarkDataGenerator {
             int maxLength = (int)(targetLength * 1.2);
             int actualLength = minLength + random.nextInt(maxLength - minLength + 1);
             
-            if (targetLength <= 10) {
-                // Simple patterns for small sizes
-                pattern = generateSimplePattern(actualLength);
-            } else if (targetLength <= 1000) {
-                // More complex patterns for medium sizes
-                pattern = generateComplexPattern(actualLength);
-            } else {
-                // For very large sizes, use repetition patterns to avoid compilation issues
-                pattern = generateRepetitionPattern(actualLength);
+            // Generate pattern with retry logic for validation
+            int attempts = 0;
+            do {
+                if (targetLength <= 10) {
+                    // Simple patterns for small sizes
+                    pattern = generateSimplePattern(actualLength);
+                } else if (targetLength <= 1000) {
+                    // More complex patterns for medium sizes
+                    pattern = generateComplexPattern(actualLength);
+                } else {
+                    // For very large sizes, use repetition patterns to avoid compilation issues
+                    pattern = generateRepetitionPattern(actualLength);
+                }
+                attempts++;
+            } while (!isValidPattern(pattern) && attempts < 5);
+            
+            // If we couldn't generate a valid pattern, create a simple fallback
+            if (!isValidPattern(pattern)) {
+                pattern = generateSimpleFallback(Math.min(actualLength, 10));
             }
+            
             patterns.add(pattern);
         }
         
@@ -100,24 +112,35 @@ public class BenchmarkDataGenerator {
     }
     
     /**
-     * Generate simple regex patterns
+     * Generate simple regex patterns with valid syntax
      */
     private static String generateSimplePattern(int length) {
         StringBuilder pattern = new StringBuilder();
+        boolean lastWasQuantifier = false;
         
-        for (int i = 0; i < length; i++) {
-            if (random.nextDouble() < 0.1 && pattern.length() > 0) {
-                // Add quantifier to previous character
-                String quantifier = QUANTIFIERS[random.nextInt(QUANTIFIERS.length)];
-                if (!quantifier.isEmpty()) {
-                    pattern.append(quantifier);
-                }
-            } else if (random.nextDouble() < 0.1 && pattern.length() > 0) {
-                // Add alternation
-                pattern.append("|").append(CHARS[random.nextInt(CHARS.length)]);
-            } else {
-                // Add regular character
+        while (pattern.length() < length) {
+            double choice = random.nextDouble();
+            
+            if (choice < 0.6) {
+                // Add regular character (most common)
                 pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                lastWasQuantifier = false;
+                
+            } else if (choice < 0.8 && !lastWasQuantifier && pattern.length() > 0) {
+                // Add quantifier to previous character (only if last wasn't a quantifier)
+                String quantifier = BASIC_QUANTIFIERS[random.nextInt(BASIC_QUANTIFIERS.length)];
+                pattern.append(quantifier);
+                lastWasQuantifier = true;
+                
+            } else if (choice < 0.9 && pattern.length() > 0 && pattern.length() < length - 1) {
+                // Add alternation (ensure we have room for at least one more character)
+                pattern.append("|").append(CHARS[random.nextInt(CHARS.length)]);
+                lastWasQuantifier = false;
+                
+            } else {
+                // Add regular character as fallback
+                pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                lastWasQuantifier = false;
             }
         }
         
@@ -125,103 +148,88 @@ public class BenchmarkDataGenerator {
     }
     
     /**
-     * Generate complex regex patterns with grouping, targeting specific length
+     * Generate complex regex patterns with grouping and valid syntax
      */
     private static String generateComplexPattern(int targetLength) {
         StringBuilder pattern = new StringBuilder();
-        int currentLength = 0;
+        boolean lastWasQuantifier = false;
         
-        while (currentLength < targetLength - 1) { // Leave room for at least 1 more character
-            int remainingLength = targetLength - currentLength;
+        while (pattern.length() < targetLength) {
+            int remainingLength = targetLength - pattern.length();
             double choice = random.nextDouble();
             
-            if (choice < 0.3 && remainingLength >= 5) {
-                // Add grouped pattern - scale inner pattern size with remaining length
+            if (choice < 0.25 && remainingLength >= 6 && !lastWasQuantifier) {
+                // Add grouped pattern with alternation: (a|b)
                 pattern.append("(");
-                int innerSize = Math.min(remainingLength - 3, Math.max(2, remainingLength / 4));
-                String innerPattern = generateSimplePattern(innerSize);
-                pattern.append(innerPattern);
+                pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                pattern.append("|");
+                pattern.append(CHARS[random.nextInt(CHARS.length)]);
                 pattern.append(")");
-                currentLength += innerPattern.length() + 2;
+                lastWasQuantifier = false;
                 
                 // Maybe add quantifier to group
-                if (random.nextDouble() < 0.4 && currentLength < targetLength) {
-                    String quantifier = QUANTIFIERS[1 + random.nextInt(QUANTIFIERS.length - 1)]; // Skip empty
+                if (random.nextDouble() < 0.5 && remainingLength > 6) {
+                    String quantifier = BASIC_QUANTIFIERS[random.nextInt(BASIC_QUANTIFIERS.length)];
                     pattern.append(quantifier);
-                    currentLength += 1;
+                    lastWasQuantifier = true;
                 }
                 
-            } else if (choice < 0.5 && currentLength > 0 && remainingLength >= 3) {
+            } else if (choice < 0.4 && !lastWasQuantifier && pattern.length() > 0) {
+                // Add quantifier to previous element
+                String quantifier = BASIC_QUANTIFIERS[random.nextInt(BASIC_QUANTIFIERS.length)];
+                pattern.append(quantifier);
+                lastWasQuantifier = true;
+                
+            } else if (choice < 0.6 && pattern.length() > 0 && remainingLength >= 3) {
                 // Add alternation
                 pattern.append("|");
                 pattern.append(CHARS[random.nextInt(CHARS.length)]);
-                currentLength += 2;
+                lastWasQuantifier = false;
                 
             } else {
-                // Add character with possible quantifier
+                // Add regular character
                 pattern.append(CHARS[random.nextInt(CHARS.length)]);
-                currentLength += 1;
-                
-                if (random.nextDouble() < 0.3 && currentLength < targetLength) {
-                    String quantifier = QUANTIFIERS[random.nextInt(QUANTIFIERS.length)];
-                    if (!quantifier.isEmpty()) {
-                        pattern.append(quantifier);
-                        currentLength += 1;
-                    }
-                }
+                lastWasQuantifier = false;
             }
-        }
-        
-        // Fill remaining length with simple characters if needed
-        while (currentLength < targetLength) {
-            pattern.append(CHARS[random.nextInt(CHARS.length)]);
-            currentLength += 1;
         }
         
         return pattern.toString();
     }
     
     /**
-     * Generate simple patterns for very large sizes
+     * Generate simple patterns for very large sizes with valid syntax
      * Creates basic patterns that are fast to compile and execute
      */
     private static String generateRepetitionPattern(int targetLength) {
         StringBuilder pattern = new StringBuilder();
+        boolean lastWasQuantifier = false;
         
-        // For very large sizes, create short simple patterns without quantified repetitions
-        int maxPatternLength = Math.min(50, targetLength / 2000); // Very short patterns
-        maxPatternLength = Math.max(10, maxPatternLength); // At least 10 chars
+        // For very large sizes, create short simple patterns
+        int maxPatternLength = Math.min(30, Math.max(5, targetLength / 1000));
         
         while (pattern.length() < maxPatternLength) {
             double choice = random.nextDouble();
+            int remainingLength = maxPatternLength - pattern.length();
             
-            if (choice < 0.3 && pattern.length() < maxPatternLength - 5) {
-                // Simple alternation
+            if (choice < 0.3 && remainingLength >= 5 && !lastWasQuantifier) {
+                // Simple alternation (a|b)
                 pattern.append("(")
                         .append(CHARS[random.nextInt(CHARS.length)])
                         .append("|")
                         .append(CHARS[random.nextInt(CHARS.length)])
                         .append(")");
+                lastWasQuantifier = false;
                 
-            } else if (choice < 0.6 && pattern.length() < maxPatternLength - 4) {
-                // Character class
-                pattern.append("[");
-                int classSize = 2 + random.nextInt(2); // 2-3 chars in class
-                for (int i = 0; i < classSize; i++) {
-                    pattern.append(CHARS[random.nextInt(CHARS.length)]);
-                }
-                pattern.append("]");
+            } else if (choice < 0.5 && !lastWasQuantifier && pattern.length() > 0) {
+                // Add quantifier to previous element
+                String quantifier = BASIC_QUANTIFIERS[random.nextInt(BASIC_QUANTIFIERS.length)];
+                pattern.append(quantifier);
+                lastWasQuantifier = true;
                 
-            } else if (pattern.length() < maxPatternLength - 2) {
-                // Simple character with basic quantifier
-                pattern.append(CHARS[random.nextInt(CHARS.length)]);
-                if (random.nextDouble() < 0.4) {
-                    String[] quantifiers = {"*", "+", "?"};
-                    pattern.append(quantifiers[random.nextInt(quantifiers.length)]);
-                }
             } else {
-                // Just add a character to finish
+                // Add a simple character
                 pattern.append(CHARS[random.nextInt(CHARS.length)]);
+                lastWasQuantifier = false;
             }
         }
         
@@ -304,5 +312,89 @@ public class BenchmarkDataGenerator {
         }
         
         return nonMatchingStrings;
+    }
+    
+    /**
+     * Validate that a pattern follows supported regex syntax
+     */
+    private static boolean isValidPattern(String pattern) {
+        if (pattern == null || pattern.isEmpty()) {
+            return false;
+        }
+        
+        boolean lastWasQuantifier = false;
+        int parenDepth = 0;
+        
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            
+            switch (c) {
+                case '*':
+                case '+':
+                case '?':
+                    // Quantifiers can't be first, can't follow other quantifiers
+                    if (i == 0 || lastWasQuantifier) {
+                        return false;
+                    }
+                    lastWasQuantifier = true;
+                    break;
+                    
+                case '(':
+                    parenDepth++;
+                    lastWasQuantifier = false;
+                    break;
+                    
+                case ')':
+                    parenDepth--;
+                    if (parenDepth < 0) {
+                        return false; // Unmatched closing paren
+                    }
+                    lastWasQuantifier = false;
+                    break;
+                    
+                case '|':
+                    // Alternation can't be first or last, and can't follow quantifiers
+                    if (i == 0 || i == pattern.length() - 1 || lastWasQuantifier) {
+                        return false;
+                    }
+                    lastWasQuantifier = false;
+                    break;
+                    
+                case '[':
+                case ']':
+                    // Character classes not supported by parser
+                    return false;
+                    
+                default:
+                    // Regular character
+                    lastWasQuantifier = false;
+                    break;
+            }
+        }
+        
+        // Check for unmatched parentheses
+        return parenDepth == 0;
+    }
+    
+    /**
+     * Generate a simple fallback pattern that's guaranteed to be valid
+     */
+    private static String generateSimpleFallback(int length) {
+        StringBuilder pattern = new StringBuilder();
+        
+        for (int i = 0; i < length; i++) {
+            if (i > 0 && random.nextDouble() < 0.3) {
+                // Add alternation occasionally
+                pattern.append("|");
+            }
+            pattern.append(CHARS[random.nextInt(CHARS.length)]);
+            
+            // Add quantifier occasionally (but not after alternation)
+            if (random.nextDouble() < 0.2 && !pattern.toString().endsWith("|")) {
+                pattern.append(BASIC_QUANTIFIERS[random.nextInt(BASIC_QUANTIFIERS.length)]);
+            }
+        }
+        
+        return pattern.toString();
     }
 }

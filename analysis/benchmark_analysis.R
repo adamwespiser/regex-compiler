@@ -39,6 +39,7 @@ data_clean$processingTimeNs <- (data_clean$matchTimeNs + data_clean$findTimeNs) 
 data_clean$memoryUsedKB <- data_clean$memoryUsedBytes / 1024
 data_clean$processingTimeUs <- data_clean$processingTimeNs / 1000
 data_clean$matchTimeUs <- data_clean$matchTimeNs / 1000
+data_clean$findTimeUs <- data_clean$findTimeNs / 1000
 
 # Define consistent colors for algorithms
 algorithm_colors <- c("Naive" = "#1f77b4", "Backtrack" = "#ff7f0e", "Table" = "#2ca02c", "JIT" = "#d62728")
@@ -185,6 +186,52 @@ ggsave("analysis/match_time_by_algorithm.png", match_plot,
 ggsave("analysis/match_time_by_algorithm_log.png", match_plot_log, 
        width = 10, height = 6, dpi = 300, bg = "white")
 
+# Create find time whisker plot
+cat("Creating find time plot...\n")
+find_plot <- ggplot(data_clean, aes(x = dataSize, y = findTimeUs, fill = algorithm)) +
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  scale_fill_manual(values = algorithm_colors, name = "Algorithm") +
+  scale_y_continuous(labels = comma_format(suffix = " μs")) +
+  labs(
+    title = "Find Time by Algorithm and Data Size",
+    subtitle = "Whisker plots showing distribution of find() operation time",
+    x = "Data Size (Pattern/Input Length)",
+    y = "Find Time (microseconds)",
+    caption = "Boxes show quartiles, whiskers show 1.5*IQR range"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray60"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+find_plot_log <- ggplot(data_clean, aes(x = dataSize, y = findTimeUs, fill = algorithm)) +
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  scale_fill_manual(values = algorithm_colors, name = "Algorithm") +
+  scale_y_log10(labels = comma_format(suffix = " μs")) +
+  labs(
+    title = "Find Time by Algorithm and Data Size (Log Scale)",
+    subtitle = "Whisker plots showing distribution of find() operation time",
+    x = "Data Size (Pattern/Input Length)",
+    y = "Find Time (microseconds) - Log Scale",
+    caption = "Boxes show quartiles, whiskers show 1.5*IQR range"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray60"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+ggsave("analysis/find_time_by_algorithm.png", find_plot, 
+       width = 10, height = 6, dpi = 300, bg = "white")
+
+ggsave("analysis/find_time_by_algorithm_log.png", find_plot_log, 
+       width = 10, height = 6, dpi = 300, bg = "white")
+
 # Print summary statistics using base R
 cat("\n")
 cat(paste(rep("=", 50), collapse = ""))
@@ -232,6 +279,19 @@ match_summary <- data.frame(
 )
 print(match_summary)
 
+# Find time summary by algorithm
+cat("\nFind Time Summary (μs):\n")
+find_summary <- data.frame(
+  algorithm = algorithms,
+  min = sapply(algorithms, function(a) min(data_clean$findTimeUs[data_clean$algorithm == a])),
+  q1 = sapply(algorithms, function(a) quantile(data_clean$findTimeUs[data_clean$algorithm == a], 0.25)),
+  median = sapply(algorithms, function(a) median(data_clean$findTimeUs[data_clean$algorithm == a])),
+  mean = sapply(algorithms, function(a) mean(data_clean$findTimeUs[data_clean$algorithm == a])),
+  q3 = sapply(algorithms, function(a) quantile(data_clean$findTimeUs[data_clean$algorithm == a], 0.75)),
+  max = sapply(algorithms, function(a) max(data_clean$findTimeUs[data_clean$algorithm == a]))
+)
+print(find_summary)
+
 # Results by data size and algorithm
 cat("\nResults by Data Size:\n")
 sizes <- unique(data_clean$dataSize)
@@ -263,3 +323,5 @@ cat("  - analysis/processing_time_by_algorithm.png\n")
 cat("  - analysis/processing_time_by_algorithm_log.png\n")
 cat("  - analysis/match_time_by_algorithm.png\n")
 cat("  - analysis/match_time_by_algorithm_log.png\n")
+cat("  - analysis/find_time_by_algorithm.png\n")
+cat("  - analysis/find_time_by_algorithm_log.png\n")

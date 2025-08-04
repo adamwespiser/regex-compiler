@@ -66,3 +66,9 @@ The benchmark measures:
 ![Match Time by Algorithm](analysis/match_time_by_algorithm.png)
 
 ![Match Time by Algorithm (Log Scale)](analysis/match_time_by_algorithm_log.png)
+
+#### Find Time Comparison
+
+![Find Time by Algorithm](analysis/find_time_by_algorithm.png)
+
+![Find Time by Algorithm (Log Scale)](analysis/find_time_by_algorithm_log.png)
